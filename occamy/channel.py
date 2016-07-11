@@ -62,17 +62,18 @@ class Channel:
         return self._topic == topic
 
     def push(self, event, payload, timeout=None):
-        timeout = timeout or self._timeout
+        if timeout is None:
+            timeout = self._timeout
         if not self._joined_once:
-            raise RuntimeError(
-                "tried to push '{event}' to '{topic}' before joining"
-                .format(event=event, topic=self._topic))
-        push = Push(self, event, payload, timeout)
+            raise RuntimeError("tried to push '{}' to '{}' before joining"
+                               .format(event, self._topic))
+        push_event = Push(self, event, payload, timeout)
         if self._can_push():
-            push.send()
+            push_event.send()
         else:
-            push.start_timeout()
-            self._push_buffer.append(push)
+            push_event.start_timeout()
+            self._push_buffer.append(push_event)
+        return push_event
 
     def leave(self, timeout=None):
         timeout = timeout or self._timeout
